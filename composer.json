@@ -1,0 +1,35 @@
+{
+  "name": "rabbit/db-taos",
+  "description": "rabbit taos client with libtaos driver.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "albert",
+      "email": "63851587@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.4.0",
+    "ext-ffi": "*",
+    "ext-swoole": ">=4.5.0",
+    "rabbit/base": "dev-master",
+    "rabbit/cache": "dev-master",
+    "rabbit/parser": "dev-master",
+    "rabbit/pool": "dev-master",
+    "rabbit/active-record": "dev-master",
+    "rabbit/db": "dev-master"
+  },
+  "require-dev": {
+    "swoole/ide-helper": "@dev",
+    "phpunit/phpunit": "*"
+  },
+  "suggest": {
+    "libtaos.so": "Build from https://github.com/taosdata/TDengine"
+  },
+  "autoload": {
+    "psr-4": {
+      "Rabbit\\DB\\Taos\\": "src/"
+    }
+  }
+}
