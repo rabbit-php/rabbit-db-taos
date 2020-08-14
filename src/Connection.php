@@ -44,7 +44,7 @@ class Connection extends \Rabbit\DB\Connection implements InitInterface
 
     public function init(): void
     {
-        $this->ffi = TaosHelper::getFFI($this->libPath);
+        $this->ffi = TaosHelper::getTaos($this->libPath);
     }
 
 
@@ -62,6 +62,9 @@ class Connection extends \Rabbit\DB\Connection implements InitInterface
      */
     public function getSchema(): \Rabbit\DB\Schema
     {
+        if ($this->schema !== null) {
+            return $this->schema;
+        }
         return $this->schema = create([
             'class' => Schema::class,
             'db' => $this

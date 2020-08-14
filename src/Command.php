@@ -72,8 +72,10 @@ class Command extends \Rabbit\DB\Command
 
     protected function bindPendingParams(): void
     {
-        $argType = FFI::arrayType($this->db->ffi->type('TAOS_BIND'), [count($this->params)]);
-        $p = $this->db->ffi->new($argType);
+        if (0 === $count = count($this->params)) {
+            return;
+        }
+        $p = $this->db->ffi->new(FFI::arrayType($this->db->ffi->type('TAOS_BIND'), [$count]));
         $i = 0;
         foreach ($this->params as $name => $value) {
             if (is_int($value)) {
@@ -106,6 +108,7 @@ class Command extends \Rabbit\DB\Command
             $p[$i]->length = FFI::addr($p[$i]->buffer_length);
             $i++;
         }
+        $this->db->ffi->taos_stmt_bind_param($this->pdoStatement, $p);
     }
 
     /**
@@ -117,11 +120,7 @@ class Command extends \Rabbit\DB\Command
         $rawSql = $this->getRawSql();
         $this->logQuery($rawSql, 'clickhouse');
         try {
-            $result = $this->db->ffi->taos_query($this->db->getConn(), $rawSql);
-            $code = $this->db->ffi->taos_errno($result);
-            if ($code !== 0) {
-                throw new Exception(sprintf("execute $rawSql failed, reason:%s", FFI::string($this->db->ffi->taos_errstr($result))));
-            }
+            $result = $this->realExecute();
             return FFI::cast('int', $this->db->ffi->taos_affected_rows($result))->cdata;
         } catch (Throwable $exception) {
             throw new Exception($exception->getMessage());
@@ -192,8 +191,7 @@ class Command extends \Rabbit\DB\Command
         $this->logQuery($rawSql, 'taos');
 
         try {
-            $taos = $this->db->getConn();
-            $res = $this->db->ffi->taos_query($taos, $rawSql);
+            $res = $this->realExecute();
             $fieldsNum = FFI::cast('int', $this->db->ffi->taos_num_fields($res));
             $fields = $this->db->ffi->taos_fetch_fields($res);
             if ($method === '') {
@@ -220,6 +218,23 @@ class Command extends \Rabbit\DB\Command
         } finally {
             $this->db->ffi->taos_free_result($res);
         }
+    }
+
+    /**
+     * @return FFI\CData
+     * @throws Exception
+     */
+    private function realExecute(): FFI\CData
+    {
+        $this->prepare();
+        $this->db->ffi->taos_stmt_execute($this->pdoStatement);
+        $res = $this->db->ffi->taos_stmt_use_result($this->pdoStatement);
+        $this->db->ffi->taos_stmt_close($this->pdoStatement);
+        $code = $this->db->ffi->taos_errno($res);
+        if ($code !== 0) {
+            throw new Exception(sprintf("execute $rawSql failed, reason:%s", FFI::string($this->db->ffi->taos_errstr($res))));
+        }
+        return $res;
     }
 
     /**

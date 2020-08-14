@@ -46,7 +46,7 @@ typedef enum {
 } TSDB_OPTION;
 
 typedef struct taosField {
-    char     name[65];
+  char     name[65];
   uint8_t  type;
   int16_t  bytes;
 } TAOS_FIELD;
@@ -58,7 +58,7 @@ TAOS *taos_connect(const char *ip, const char *user, const char *pass, const cha
 void  taos_close(TAOS *taos);
 
 typedef struct TAOS_BIND {
-    int            buffer_type;
+  int            buffer_type;
   void *         buffer;
   unsigned long  buffer_length;  // unused
   unsigned long *length;
@@ -115,19 +115,42 @@ int taos_load_table_info(TAOS *taos, const char* tableNameList);
 
 HEADER;
 
-    private static ?FFI $instance = null;
+    private static ?FFI $taos = null;
+    private static ?FFI $async = null;
 
     /**
      * @param string|null $libPath
      * @return FFI
      */
-    public static function getFFI(?string $libPath = null): FFI
+    public static function getTaos(?string $libPath = null): FFI
     {
-        if (self::$instance !== null) {
-            return self::$instance;
+        if (self::$taos !== null) {
+            return self::$taos;
         }
-        self::$instance = FFI::cdef(self::$header, $libPath ?? "libtaos.so");
-        return self::$instance;
+        self::$taos = FFI::cdef(self::$header, $libPath ?? "libtaos.so");
+        return self::$taos;
+    }
+
+    /**
+     * @return FFI
+     */
+    public static function getAsync(): FFI
+    {
+        if (self::$async !== null) {
+            return self::$async;
+        }
+        self::$async = FFI::cdef(<<<HEADER
+typedef void (*__async_cb_func_t)(void *tres, int code);
+
+typedef struct
+{
+    __async_cb_func_t callback;
+} CB_DATA;
+
+void *init();
+HEADER
+, __DIR__ . '/libs/async.so');
+        return self::$async;
     }
 
     /**
@@ -135,7 +158,7 @@ HEADER;
      * @param FFI\CData $row
      * @return string
      */
-    public static function getValue(int $type, \FFI\CData $row)
+    public static function getValue(int $type, FFI\CData $row)
     {
         switch ($type) {
             case Schema::TSDB_DATA_TYPE_TINYINT:
