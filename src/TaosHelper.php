@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+declare (strict_types = 1);
 
 namespace Rabbit\DB\Taos;
 
@@ -122,35 +122,13 @@ HEADER;
      * @param string|null $libPath
      * @return FFI
      */
-    public static function getTaos(?string $libPath = null): FFI
+    public static function getTaos(?string $libPath = null) : FFI
     {
         if (self::$taos !== null) {
             return self::$taos;
         }
         self::$taos = FFI::cdef(self::$header, $libPath ?? "libtaos.so");
         return self::$taos;
-    }
-
-    /**
-     * @return FFI
-     */
-    public static function getAsync(): FFI
-    {
-        if (self::$async !== null) {
-            return self::$async;
-        }
-        self::$async = FFI::cdef(<<<HEADER
-typedef void (*__async_cb_func_t)(void *tres, int code);
-
-typedef struct
-{
-    __async_cb_func_t callback;
-} CB_DATA;
-
-void *init();
-HEADER
-, __DIR__ . '/libs/async.so');
-        return self::$async;
     }
 
     /**
@@ -180,7 +158,7 @@ HEADER
                 $value = FFI::cast('int64_t', $row)->cdata;
                 $mtimestamp = sprintf("%.3f", $value / 1000);
                 [$timestamp, $milliseconds] = explode('.', $mtimestamp);
-                return date('Y-m-d H:i:s', (int)$timestamp) . '.' . $milliseconds;
+                return date('Y-m-d H:i:s', (int) $timestamp) . '.' . $milliseconds;
             case Schema::TSDB_DATA_TYPE_BOOL:
                 return FFI::cast('bool', $row)->cdata;
 
